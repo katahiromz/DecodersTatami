@@ -1,0 +1,14 @@
+CMakeFiles
+Makefile
+*.cmake
+CMakeCache.txt
+build/
+RosBE-Logs/
+*.exe
+*.dll
+!target/target.exe
+*.ninja
+.ninja*
+a.*
+__pycache__
+*-old

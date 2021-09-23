@@ -1,0 +1,124 @@
+# NOTE for disassembly tricks
+
+## F.ARGC
+
+`F.ARGC` is the arity of function `F`.
+
+If `F` is `stdcall` and has non-zero arity, instruction `ret` of `F` has operand `(F.ARGC * 4)`;
+
+## F.ARGV[1], F.ARGV[2], ...
+
+If `F` is `stdcall` and `F` has stack frame, then:
+
+```asm
+// In the stack frame,
+assert(F.ARGV[1] == [ebp+0x8]);
+assert(F.ARGV[2] == [ebp+0xc]);
+assert(F.ARGV[3] == [ebp+0x10]);
+assert(F.ARGV[4] == [ebp+0x14]);
+...
+```
+
+## sub-esp trick
+
+```asm
+sub esp, X
+```
+[=>]
+```txt
+// In the stack frame,
+Allocate local variables `X` bytes;
+ESP = [(X bytes), (old ebp), (ret. addr.), ARGV[1], ...];
+```
+
+## xor-same trick
+
+```asm
+xor eax, eax
+```
+[=>]
+```txt
+eax = 0;
+```
+
+## and-zero trick
+
+```asm
+and dword [eax], 0x0
+```
+[=>]
+```txt
+*(DWORD*)eax = 0;
+```
+
+## push-pop trick
+
+```asm
+push eax
+pop ecx
+```
+[=>]
+```txt
+ecx = eax;
+```
+
+## neg-sbb trick
+
+```asm
+neg eax
+sbb eax, eax
+```
+[=>]
+```txt
+CarryFlag = (eax != 0);
+eax = -(LONG)eax;
+eax -= eax + CarryFlag;
+```
+[=>]
+```c
+if (eax != 0)
+    eax = 0xFFFFFFFF;
+else
+    eax = 0;
+```
+
+## neg-sbb trick 2
+
+```asm
+neg eax
+sbb eax, eax
+neg eax
+```
+[=>]
+```txt
+CarryFlag = (eax != 0);
+eax = -(LONG)eax;
+eax -= eax + CarryFlag;
+eax = -(LONG)eax;
+```
+[=>]
+```c
+eax = (eax != 0);
+```
+
+## Alignment
+
+```asm
+76293F70: add eax, 0x3
+76293F73: and eax, 0xfffffffc
+```
+[=>]
+```txt
+eax += 3;
+eax &= 0xfffffffc;
+```
+[=>]
+```txt
+#define ROUNDUP4(n) (((n) + 3) & ~3)
+eax = ROUNDUP4(eax);
+```
+
+## See also
+
+For conditional jumps:
+http://www.unixwiz.net/techtips/x86-jumps.html
